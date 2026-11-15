@@ -58,3 +58,33 @@ Willkommen in meinem Smart-Camper-Projekt! Da ich 9 Monate im Jahr in meinem Woh
 Work on 12V/230V electrical systems, gas appliances, and heating buses (Alde LIN-Bus) is strictly at your own risk. / Arbeiten an Elektrik, Gas und Heizung (Alde LIN-Bus) erfolgen ausschließlich auf eigene Gefahr.
 
 https://github.com/user-attachments/assets/8241c83d-7c63-4c02-9587-6388603c0c1d
+
+<img width="1008" height="2244" alt="Screenshot_20261115-170219" src="https://github.com/user-attachments/assets/70c043d4-869f-4f83-bc4c-832c285da112" />
+<img width="1008" height="2244" alt="Screenshot_20261115-170211" src="https://github.com/user-attachments/assets/dce474c7-0f07-4f59-b720-e81452463023" />
+<img width="1008" height="2244" alt="Screenshot_20261115-170238" src="https://github.com/user-attachments/assets/7eadddc0-a7f7-43d9-be2d-6a4a72084475" />
+<img width="1008" height="2244" alt="Screenshot_20261115-170228" src="https://github.com/user-attachments/assets/5b0481c5-7f76-44b9-baea-70d684a4667a" />
+<img width="1008" height="2244" alt="Screenshot_20261115-170244" src="https://github.com/user-attachments/assets/3976999f-db88-40f3-8f40-9fb52104735a" />
+<img width="1008" height="2244" alt="Screenshot_20261115-170307" src="https://github.com/user-attachments/assets/30622d02-8529-4b39-bb3b-b824df131ffa" />
+<img width="1008" height="2244" alt="Screenshot_20261115-170254" src="https://github.com/user-attachments/assets/20e5b8a4-0778-43cc-928c-0c9be2d21f8f" />
+<img width="1008" height="2244" alt="Screenshot_20261115-170326" src="https://github.com/user-attachments/assets/9509574d-fa2c-4ad7-9bb8-f6e1a61a5de4" />
+<img width="1008" height="2244" alt="Screenshot_20261115-170333" src="https://github.com/user-attachments/assets/54266881-c81a-48bf-986f-aa742f7f13cd" />
+<img width="1008" height="2244" alt="Screenshot_20261115-170342" src="https://github.com/user-attachments/assets/4b507649-a1b0-4520-8e00-f9a65adf6740" />
+<img width="1008" height="2244" alt="Screenshot_20261115-170340" src="https://github.com/user-attachments/assets/00babf29-4ba2-4bc5-a718-0f418b6aa585" />
+<img width="1008" height="2244" alt="Screenshot_20261115-170347" src="https://github.com/user-attachments/assets/23d966c0-c5d2-45e6-b134-e433e136081d" />
+<img width="1008" height="2244" alt="Screenshot_20261115-170731" src="https://github.com/user-attachments/assets/c9d54df2-f3da-42b2-8b92-e2a0efff6ec4" />
+<img width="1008" height="2244" alt="Screenshot_20261115-170724" src="https://github.com/user-attachments/assets/b9ddf97d-981f-4ae6-b863-5c82150ecd95" />
+<img width="1008" height="2244" alt="Screenshot_20261115-170736" src="https://github.com/user-attachments/assets/7b16afc7-452f-418e-b180-3c4d1be0839a" />
+<img width="1008" height="2244" alt="Screenshot_20261115-170741" src="https://github.com/user-attachments/assets/ba4a0583-b21e-4e9b-8314-81fbc47be8ed" />
+<img width="1008" height="2244" alt="Screenshot_20261115-170759" src="https://github.com/user-attachments/assets/3bac3849-2af4-4d1c-b2b4-c240f0badac7" />
+<img width="1008" height="2244" alt="Screenshot_20261115-170753" src="https://github.com/user-attachments/assets/16c15a47-be67-4bef-8d80-6465270c572d" />
+<img width="1008" height="2244" alt="Screenshot_20261115-170804" src="https://github.com/user-attachments/assets/89190b9e-7786-486a-9044-c7bc61e1ed6b" />
+<img width="1008" height="2244" alt="Screenshot_20261115-170802" src="https://github.com/user-attachments/assets/c91b079f-ca5b-4d0b-8270-9199d9b768c4" />
+<img width="1008" height="2244" alt="Screenshot_20261115-170812" src="https://github.com/user-attachments/assets/62647d6d-df40-426a-96d1-634e553b660a" />
+<img width="1008" height="2244" alt="Screenshot_20261115-170807" src="https://github.com/user-attachments/assets/e0ad2809-d542-4c40-84c0-cd02ffd577fc" />
+<img width="1008" height="2244" alt="Screenshot_20261115-170820" src="https://github.com/user-attachments/assets/6ee5e121-ab00-4a0e-b9b1-2109d2e63ce9" />
+<img width="1008" height="2244" alt="Screenshot_20261115-170354" src="https://github.com/user-attachments/assets/c8004187-e104-4ff5-8565-cf4f238bab71" />
+<img width="1008" height="2244" alt="Screenshot_20261115-170250" src="https://github.com/user-attachments/assets/1096c85f-fc8e-4a13-b793-d48e938cb63d" />
+
+<!-- Failed to upload "Alpa.mp4" -->
+
+<!-- Failed to upload "Alpa innen.mp4" -->
