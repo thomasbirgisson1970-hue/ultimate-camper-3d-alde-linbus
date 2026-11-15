@@ -1,5 +1,17 @@
 # 🚐 Dethleffs Grand Alpa Plus – Ultimate 3D Smart Camper OS (Home Assistant)
 
+## 🎥 Live Demo: Interactive 3D Digital Twin
+
+<!-- HIER DEINE MP4-DATEI REINZIEHEN (diesen Kommentar vorher löschen) -->
+
+*(Deutsche Version weiter unten / German version below)*
+
+Welcome to my Smart Camper ecosystem! Living 9 months a year in my motorhome (**Dethleffs Grand Alpa Plus on Iveco Daily**), I built a fully local, autonomous Home Assistant control center – from reverse-engineered hardware protocols to an interactive 3D Digital Twin.
+
+https://github.com/user-attachments/assets/c5d35784-3709-4dd9-8907-3b904a6176ec
+
+# 🚐 Dethleffs Grand Alpa Plus – Ultimate 3D Smart Camper OS (Home Assistant)
+
 *(Deutsche Version weiter unten / German version below)*
 
 Welcome to my local, autonomous Home Assistant ecosystem for my **Dethleffs Grand Alpa Plus on Iveco Daily**, developed from scratch with AI assistance across 9 months of full-time motorhome life.
