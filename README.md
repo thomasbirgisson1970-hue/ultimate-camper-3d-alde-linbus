@@ -56,3 +56,5 @@ Willkommen in meinem Smart-Camper-Projekt! Da ich 9 Monate im Jahr in meinem Woh
 
 ## ⚠️ Disclaimer / Sicherheitshinweis
 Work on 12V/230V electrical systems, gas appliances, and heating buses (Alde LIN-Bus) is strictly at your own risk. / Arbeiten an Elektrik, Gas und Heizung (Alde LIN-Bus) erfolgen ausschließlich auf eigene Gefahr.
+
+https://github.com/user-attachments/assets/8241c83d-7c63-4c02-9587-6388603c0c1d
