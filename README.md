@@ -21,8 +21,8 @@ Welcome to my Smart Camper ecosystem! Living 9 months a year in my motorhome (**
   * Alexa voice control for hot water & 30-minute boost.
   * Dynamic gas consumption tracking & air cushion maintenance countdown.
 
-### 3. Simarine SDA1 Sensor Decoding & Energy Management
-* **Simarine SDA1:** Decoded the sensor protocol prior to the official broadcast mode release.
+### 3. Simarine SRR1 Sensor Decoding & Energy Management
+* **Simarine STR1:** Decoded the sensor protocol prior to the official broadcast mode release.
 * **Solar Surplus Fridge Control:** Switches the fridge to 12V via Victron BMV-712 relay & Shelly based on battery SoC (`off < 97%`, `on > 99.9%`).
 * **Temperature-Compensated Fridge Gas Algorithm:** Calculates real-time gas usage dynamically based on outside temperature.
 * **Water & Leveling:** 7-day rolling average for fresh water autonomy + **MPU-6050 gyro sensor** for precise tank readings and hydraulic leveling checks.
@@ -48,7 +48,7 @@ Willkommen in meinem Smart-Camper-Projekt! Da ich 9 Monate im Jahr in meinem Woh
 
 * **Interaktives 3D-Dashboard:** Frei drehbares 3D-Modell (inklusive Iveco-Daily-Fahrerhaus, Innenansicht, Solarkoffer & Heckträger) mit Live-Solarwerten und Blink-Kameras in den Spiegeln.
 * **Alde 3020 LIN-Bus Komplettsteuerung:** Mit M5Stack Atom Lite & TTL-LIN-Modul alle Befehle und CI-Rohdaten entschlüsselt (automatische Landstrom-Umschaltung, lautlose Nachtheizung unter 19 °C ohne Panel-Licht, Alexa-Warmwasser-Boost, Höhenmodus & Gasverbrauchsschätzung).
-* **Simarine SDA1 & Energie-Logik:** Simarine SDA1 Sensor noch vor Veröffentlichung des Broadcast-Modus entschlüsselt; Victron BMV-712 & Shelly Solarüberschuss-Steuerung für den Kühlschrank; temperaturkompensierter Gas-Algorithmus; 7-Tage-Wasserprognose & MPU-6050 Neigungssensor.
+* **Simarine STR1 & Energie-Logik:** Simarine STR1 Sensor noch vor Veröffentlichung des Broadcast-Modus entschlüsselt; Victron BMV-712 & Shelly Solarüberschuss-Steuerung für den Kühlschrank; temperaturkompensierter Gas-Algorithmus; 7-Tage-Wasserprognose & MPU-6050 Neigungssensor.
 * **MaxxFan Prioritäten-Automatik (Prio 1–9):** Steuerung nach CO₂, gefühlter Außentemperatur (GPS-Wetterdienste wie DWD/AEMET) sowie automatischer Sturm- (> 40 km/h) und Regenschutz.
 * **Automatisches Fahrtenbuch & Camper-Radar:** D+-Erkennung dokumentiert Strecken & Kilometer; nächtlicher Schlafplatz-Logger; POI-Karte (*Park4Night*, *LPG*, *Ver-/Entsorgung*) sowie Dashboards für **Tractive GPS (Hund)**, **SwitchBot Aufbautür** und **1. FC Saarbrücken**.
 
