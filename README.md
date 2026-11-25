@@ -16,6 +16,8 @@ https://github.com/user-attachments/assets/c5d35784-3709-4dd9-8907-3b904a6176ec
 * **`/esphome/` & Protocols:** Reverse-engineered hardware protocols including M5Stack Atom Lite for the Alde 3020 LIN-Bus, Simarine STR1 sensor decoding, and MPU-6050 gyro sensor for tank and leveling data.
 * **Dashboards & 3D Digital Twin:** Features an interactive 3D model of the vehicle with live solar output, dynamic lighting, and integrated Blink exterior camera feeds.
 * **Automations & Energy:** Priority-based MaxxFan climate control (Prio 1–9) with weather/storm protection, solar-surplus fridge switching via Victron and Shelly, and an automated GPS logbook with custom POI integration.
+* 
+I designed, developed, and implemented the entire system in just 8 weeks.
 
 ---
 
@@ -30,6 +32,7 @@ Willkommen in meinem vollautomatischen Smart-Camper-Projekt für meinen **Dethle
 * **Simarine STR1 & Energie-Logik:** Solarüberschuss-Kühlschranksteuerung (Victron/Shelly), temperaturkompensierter Gas-Algorithmus und 7-Tage-Wasserprognose via MPU-6050 Neigungssensor.
 * **MaxxFan Prioritäten-Automatik (Prio 1–9):** Klimasteuerung nach CO₂, gefühlter Temperatur und automatischem Sturm-/Regenschutz.
 * **Automatisches Fahrtenbuch & Camper-Radar:** GPS-basierte Streckenerfassung, Schlafplatz-Logger und POI-Integration (*Park4Night*, *LPG*, *Ver-/Entsorgung*).
+Ich habe das gesamte System in nur 8 Wochen konzipiert, entwickelt und umgesetzt.
 
 ---
 
