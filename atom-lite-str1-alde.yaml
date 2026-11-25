@@ -1,0 +1,617 @@
+# ATOM Lite STR1 – STR1 per BLE-BROADCAST (passiv, App und HA gleichzeitig) + Alde-LIN
+#
+# STR1 (Firmware ab 1.2.x) sendet den Füllstand im BLE-Broadcast, Modus "Low Security":
+#   Füllstand in Promille, AES-128-CCM verschlüsselt (Schlüssel aus der Simarine-App).
+#   Protokoll: github.com/Simarine/strx-ble-broadcast-protocol
+#   Der Atom verbindet sich NICHT mehr mit dem STR1 -> die Simarine-App funktioniert parallel.
+#
+# Alde 3020 HE über CI-Bus (LIN-Transceiver an der GELBEN Buchse des Panels)
+#   Anschluss an der gelben CI-Bus-Buchse (Pin 3 LIN, Pin 5 GND).
+#   TX des Transceivers -> GPIO19 (Atom empfängt), RX des Transceivers -> GPIO22 (Atom sendet).
+#   19200 Baud, 8N1. Der Atom ist hier MASTER: er fragt jede Sekunde den Status ab
+#   (Break + 0x55 + 0x5B), das Panel antwortet mit 8 Bytes + Prüfsumme.
+#   Protokoll nach github.com/daviddootson/alde_3030_plus (PROTOCOL.md), Compact 3020 = Function-ID 0x0001.
+#   Fail-Safe: Schreiben ist gesperrt, solange "Alde CI Schreiben freigeben" aus ist
+#   (startet ohne HA-Verbindung sicher auf OFF, damit das Panel manuell bedienbar bleibt).
+#   Gesendet wird nur auf Basis eines gültigen Status (nicht älter als 5 s), immer nur EIN Feld geändert.
+#
+# LED (Helligkeit 25 %):
+#   gelb  = STR1 hörbar, aber (noch) kein gültiger Füllstand (Schlüssel/Modus prüfen)
+#   grün  = gültiger Füllstand in den letzten 30 s
+#   rot   = seit 60 s kein Broadcast vom STR1 empfangen
+
+substitutions:
+  str1_mac: "AA:BB:CC:DD:EE:FF"                          # MAC-Adresse deines Simarine STR1 Sensors
+  tank_liter: "220"                                      # Frischwasser nutzbar in Litern (z. B. 220 L)
+  str1_key: "00112233445566778899AABBCCDDEEFF"           # Simarine-App -> Broadcast Settings -> Show Encryption Key
+
+esphome:
+  min_version: 2025.8.0
+  name: atom-lite-str1
+  friendly_name: Atom Lite STR1
+
+esp32:
+  board: m5stack-atom
+  variant: esp32
+  framework:
+    type: esp-idf
+    advanced:
+      sram1_as_iram: true   # mehr Arbeitsspeicher für BLE + LIN
+
+logger:
+
+# Diagnose: Grund des letzten Neustarts (Sensor "Grund letzter Neustart")
+debug:
+
+api:
+  encryption:
+    key: "DEIN_API_ENCRYPTION_KEY"
+
+ota:
+  - platform: esphome
+    password: "DEIN_OTA_PASSWORT"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  manual_ip:
+    static_ip: 192.168.10.221
+    gateway: 192.168.10.1
+    subnet: 255.255.255.0
+    dns1: 192.168.10.1
+  power_save_mode: NONE
+  reboot_timeout: 1min
+  ap:
+    ssid: "ATOM-Lite-STR1"
+    password: "DEIN_FALLBACK_WLAN_PASSWORT"
+
+captive_portal:
+
+uart:
+  - id: lin_uart
+    rx_pin: GPIO19
+    tx_pin: GPIO22
+    baud_rate: 19200
+    data_bits: 8
+    parity: NONE
+    stop_bits: 1   # CI-Bus (gelb): 8N1
+    rx_buffer_size: 512
+
+esp32_ble_tracker:
+  scan_parameters:
+    active: true          # Scan-Antwort (Seriennummer, Boot-Zähler, Modus) wird gebraucht
+    continuous: true
+  on_ble_advertise:
+    - mac_address: ${str1_mac}
+      then:
+        - lambda: |-
+            static const uint8_t SB[256] = {0x63,0x7c,0x77,0x7b,0xf2,0x6b,0x6f,0xc5,0x30,0x01,0x67,0x2b,0xfe,0xd7,0xab,0x76,0xca,0x82,0xc9,0x7d,0xfa,0x59,0x47,0xf0,0xad,0xd4,0xa2,0xaf,0x9c,0xa4,0x72,0xc0,0xb7,0xfd,0x93,0x26,0x36,0x3f,0xf7,0xcc,0x34,0xa5,0xe5,0xf1,0x71,0xd8,0x31,0x15,0x04,0xc7,0x23,0xc3,0x18,0x96,0x05,0x9a,0x07,0x12,0x80,0xe2,0xeb,0x27,0xb2,0x75,0x09,0x83,0x2c,0x1a,0x1b,0x6e,0x5a,0xa0,0x52,0x3b,0xd6,0xb3,0x29,0xe3,0x2f,0x84,0x53,0xd1,0x00,0xed,0x20,0xfc,0xb1,0x5b,0x6a,0xcb,0xbe,0x39,0x4a,0x4c,0x58,0xcf,0xd0,0xef,0xaa,0xfb,0x43,0x4d,0x33,0x85,0x45,0xf9,0x02,0x7f,0x50,0x3c,0x9f,0xa8,0x51,0xa3,0x40,0x8f,0x92,0x9d,0x38,0xf5,0xbc,0xb6,0xda,0x21,0x10,0xff,0xf3,0xd2,0xcd,0x0c,0x13,0xec,0x5f,0x97,0x44,0x17,0xc4,0xa7,0x7e,0x3d,0x64,0x5d,0x19,0x73,0x60,0x81,0x4f,0xdc,0x22,0x2a,0x90,0x88,0x46,0xee,0xb8,0x14,0xde,0x5e,0x0b,0xdb,0xe0,0x32,0x3a,0x0a,0x49,0x06,0x24,0x5c,0xc2,0xd3,0xac,0x62,0x91,0x95,0xe4,0x79,0xe7,0xc8,0x37,0x6d,0x8d,0xd5,0x4e,0xa9,0x6c,0x56,0xf4,0xea,0x65,0x7a,0xae,0x08,0xba,0x78,0x25,0x2e,0x1c,0xa6,0xb4,0xc6,0xe8,0xdd,0x74,0x1f,0x4b,0xbd,0x8b,0x8a,0x70,0x3e,0xb5,0x66,0x48,0x03,0xf6,0x0e,0x61,0x35,0x57,0xb9,0x86,0xc1,0x1d,0x9e,0xe1,0xf8,0x98,0x11,0x69,0xd9,0x8e,0x94,0x9b,0x1e,0x87,0xe9,0xce,0x55,0x28,0xdf,0x8c,0xa1,0x89,0x0d,0xbf,0xe6,0x42,0x68,0x41,0x99,0x2d,0x0f,0xb0,0x54,0xbb,0x16};
+            static int serial = -1, boot = -1, bmode = -1;
+            static uint32_t acc_boot = 0, acc_msg = 0;
+            static bool have_acc = false, seen_secure = false;
+            static uint8_t key[16];
+            static bool key_ok = false;
+            if (!key_ok) {
+              const char *k = "${str1_key}";
+              for (int i = 0; i < 16; i++) { unsigned v = 0; sscanf(k + 2 * i, "%2x", &v); key[i] = (uint8_t) v; }
+              key_ok = true;
+            }
+            auto xt = [](uint8_t a) -> uint8_t { return (uint8_t)((a << 1) ^ ((a & 0x80) ? 0x1b : 0)); };
+            auto aes = [&](const uint8_t *key, const uint8_t *in, uint8_t *out) {
+              uint8_t rk[176];
+              for (int i = 0; i < 16; i++) rk[i] = key[i];
+              uint8_t rc = 1;
+              for (int i = 16; i < 176; i += 4) {
+                uint8_t t0 = rk[i-4], t1 = rk[i-3], t2 = rk[i-2], t3 = rk[i-1];
+                if (i % 16 == 0) { uint8_t tt = t0; t0 = SB[t1] ^ rc; t1 = SB[t2]; t2 = SB[t3]; t3 = SB[tt]; rc = xt(rc); }
+                rk[i] = rk[i-16] ^ t0; rk[i+1] = rk[i-15] ^ t1; rk[i+2] = rk[i-14] ^ t2; rk[i+3] = rk[i-13] ^ t3;
+              }
+              uint8_t s[16];
+              for (int i = 0; i < 16; i++) s[i] = in[i] ^ rk[i];
+              for (int r = 1; r <= 10; r++) {
+                uint8_t t[16];
+                for (int i = 0; i < 16; i++) t[i] = SB[s[(i + 4 * (i % 4)) % 16]];   // SubBytes + ShiftRows
+                if (r < 10) for (int c = 0; c < 4; c++) {
+                  uint8_t *p = &t[4*c]; uint8_t a0=p[0],a1=p[1],a2=p[2],a3=p[3], all=a0^a1^a2^a3;
+                  p[0] ^= all ^ xt(a0^a1); p[1] ^= all ^ xt(a1^a2); p[2] ^= all ^ xt(a2^a3); p[3] ^= all ^ xt(a3^a0);
+                }
+                for (int i = 0; i < 16; i++) s[i] = t[i] ^ rk[16*r + i];
+              }
+              for (int i = 0; i < 16; i++) out[i] = s[i];
+            };
+            // returns true if tag ok; plain[2] out
+            auto ccm2 = [&](const uint8_t *key, const uint8_t *nonce, uint8_t aad, const uint8_t *ct, const uint8_t *mic, uint8_t *plain) -> bool {
+              uint8_t a[16], s0[16], s1[16];
+              a[0] = 0x01; for (int i = 0; i < 13; i++) a[1+i] = nonce[i]; a[14] = 0; a[15] = 0;
+              aes(key, a, s0); a[15] = 1; aes(key, a, s1);
+              plain[0] = ct[0] ^ s1[0]; plain[1] = ct[1] ^ s1[1];
+              uint8_t x[16], b[16];
+              b[0] = 0x49; for (int i = 0; i < 13; i++) b[1+i] = nonce[i]; b[14] = 0; b[15] = 2;
+              aes(key, b, x);
+              for (int i = 0; i < 16; i++) b[i] = 0; b[0] = 0; b[1] = 1; b[2] = aad;
+              for (int i = 0; i < 16; i++) b[i] ^= x[i]; aes(key, b, x);
+              for (int i = 0; i < 16; i++) b[i] = 0; b[0] = plain[0]; b[1] = plain[1];
+              for (int i = 0; i < 16; i++) b[i] ^= x[i]; aes(key, b, x);
+              for (int i = 0; i < 4; i++) if ((uint8_t)(x[i] ^ s0[i]) != mic[i]) return false;
+              return true;
+            };
+
+            const auto ADV = esp32_ble_tracker::ESPBTUUID::from_raw("ea4a9703-a497-42a7-a177-f5a0b3214a0e");
+            const auto RSP = esp32_ble_tracker::ESPBTUUID::from_raw("ea4a96f3-a497-42a7-a177-f5a0b3214a0e");
+            for (auto &sd : x.get_service_datas()) {
+              const auto &d = sd.data;
+              if (sd.uuid == RSP && d.size() >= 11) {
+                serial = d[3] | (d[4] << 8);
+                bmode = d[5] & 0x0F;
+                boot = d[6] | (d[7] << 8);
+                if (bmode >= 1 && bmode <= 3) seen_secure = true;
+                uint16_t vol = d[8] | (d[9] << 8);
+                if (vol != 0xFFFF) id(str1_volume).publish_state(vol);
+              } else if (sd.uuid == ADV && d.size() >= 10) {
+                id(str1_adv_ms) = millis();
+                uint32_t msg = d[0] | (d[1] << 8) | ((uint32_t) d[2] << 16);
+                uint8_t ccc = d[9] & 0x0F;
+                uint16_t level = 0xFFFF;
+                if (bmode == 4 && !seen_secure) {
+                  level = d[3] | (d[4] << 8);
+                } else if (bmode >= 1 && bmode <= 3 && serial >= 0 && boot >= 0) {
+                  bool newer = !have_acc || ((uint32_t) boot > acc_boot) || ((uint32_t) boot == acc_boot && msg > acc_msg);
+                  if (!newer) continue;
+                  uint8_t nonce[13] = {0};
+                  nonce[0] = serial & 0xFF; nonce[1] = (serial >> 8) & 0xFF;
+                  nonce[2] = boot & 0xFF;   nonce[3] = (boot >> 8) & 0xFF;
+                  nonce[4] = msg & 0xFF; nonce[5] = (msg >> 8) & 0xFF; nonce[6] = (msg >> 16) & 0xFF;
+                  nonce[7] = ccc;
+                  uint8_t pl[2];
+                  if (ccm2(key, nonce, (uint8_t) bmode, &d[3], &d[5], pl)) {
+                    level = pl[0] | (pl[1] << 8);
+                    acc_boot = boot; acc_msg = msg; have_acc = true;
+                  } else {
+                    static uint32_t warn_ms = 0;
+                    if (millis() - warn_ms > 60000) {
+                      warn_ms = millis();
+                      ESP_LOGW("str1", "Broadcast: Prüfwert falsch - Schlüssel passt nicht? (mode=%d)", bmode);
+                      id(str1_status).publish_state("Schlüssel passt nicht");
+                    }
+                  }
+                }
+                if (level <= 1000) {
+                  id(last_data_ms) = millis();
+                  float pct = level / 10.0f;
+                  id(str1_rohwert).publish_state(level);
+                  id(str1_tank_level).publish_state(pct);
+                  id(str1_tank_liter).publish_state(pct * ${tank_liter} / 100.0f);
+                  if (id(last_raw_pub_ms) == 0 || millis() - id(last_raw_pub_ms) > 300000) {
+                    id(last_raw_pub_ms) = millis();
+                    char buf[40]; int p = 0;
+                    for (size_t i = 0; i < d.size() && p < 36; i++) p += sprintf(buf + p, "%02X ", d[i]);
+                    id(str1_raw).publish_state(buf);
+                    const char *mn[] = {"aus", "High Security", "Medium Security", "Low Security", "Open"};
+                    char st[64];
+                    snprintf(st, sizeof(st), "OK - %s, Seriennr. ...%04d", (bmode >= 0 && bmode <= 4) ? mn[bmode] : "?", serial);
+                    id(str1_status).publish_state(st);
+                  }
+                }
+              }
+            }
+
+
+globals:
+  - id: last_data_ms
+    type: uint32_t
+    initial_value: '0'
+  - id: led_mode
+    type: int
+    initial_value: '-1'
+  - id: last_raw_pub_ms
+    type: uint32_t
+    initial_value: '0'
+  - id: alde_last_ms        # letzte gültige Statusantwort vom Panel
+    type: uint32_t
+    initial_value: '0'
+  - id: str1_adv_ms         # letzter Broadcast überhaupt gehört
+    type: uint32_t
+    initial_value: '0'
+  # Ausstehender Befehl an das Panel (wird im CI-Bus-Takt ausgeführt)
+  #   0 = nichts, 1 = Sollwert +0,5, 2 = Sollwert -0,5, 3 = Kennung (0x3C) senden,
+  #   4 = Warmwasser (Wert 0/1/2), 5 = Panel (0/1), 6 = Gas (0/1), 7 = Elektro (0..3)
+  - id: alde_cmd
+    type: int
+    initial_value: '0'
+  - id: alde_cmd_val
+    type: int
+    initial_value: '0'
+
+light:
+  - platform: esp32_rmt_led_strip
+    id: atom_led
+    name: "Atom RGB Light"
+    internal: true
+    pin: GPIO27
+    chipset: SK6812
+    num_leds: 1
+    channel_colors: GRB
+    default_transition_length: 0s
+    restore_mode: ALWAYS_OFF
+
+interval:
+  - interval: 1s
+    then:
+      - lambda: |-
+          const uint32_t now = millis();
+          // 1 gelb, 2 grün, 3 rot
+          int mode;
+          if (id(last_data_ms) != 0 && (now - id(last_data_ms)) < 30000) mode = 2;
+          else if (id(str1_adv_ms) != 0 && (now - id(str1_adv_ms)) < 60000) mode = 1;
+          else mode = (now < 60000) ? 1 : 3;
+          if (mode != id(led_mode)) {
+            id(led_mode) = mode;
+            float r = 0, g = 0, b = 0;
+            if (mode == 1) { r = 1.0; g = 0.7; }
+            else if (mode == 2) { g = 1.0; }
+            else { r = 1.0; }
+            auto call = id(atom_led).turn_on();
+            call.set_rgb(r, g, b);
+            call.set_brightness(0.25f);
+            call.set_transition_length(0);
+            call.perform();
+          }
+
+  # ---------------- Alde CI-Bus (gelbe Buchse), Atom = Master ----------------
+  - interval: 1s
+    then:
+      - lambda: |-
+          static uint8_t st[8];            // letzter gültiger Status (0x1B)
+          static bool have_st = false;
+          static uint32_t st_ms = 0, ok = 0, bad = 0, tick = 0;
+          static std::string last_hex;
+          auto &u = id(lin_uart);
+
+          auto csum = [](uint8_t pid, const uint8_t *d, int n) -> uint8_t {
+            uint16_t s = pid;                           // "enhanced": ID zählt mit
+            for (int k = 0; k < n; k++) { s += d[k]; if (s > 0xFF) s -= 0xFF; }
+            return (uint8_t) ~s;
+          };
+          // LIN-Break: kurz auf 4800 Baud, 0x00 senden (ca. 1,9 ms dominant), zurück auf 19200
+          auto lin_break = [&]() {
+            u.flush();
+            u.set_baud_rate(4800);  u.load_settings(false);
+            u.write_byte(0x00);     u.flush();
+            u.set_baud_rate(19200); u.load_settings(false);
+          };
+          auto drain = [&]() { uint8_t b; while (u.available()) u.read_byte(&b); };
+          auto send_frame = [&](uint8_t pid, const uint8_t *d) {
+            drain();
+            lin_break();
+            u.write_byte(0x55); u.write_byte(pid);
+            u.write_array(d, 8);
+            u.write_byte(csum(pid, d, 8));
+            u.flush();
+            delay(10);
+            drain();                                    // eigenes Echo verwerfen
+            char hx[40]; int p = 0;
+            for (int k = 0; k < 8; k++) p += sprintf(hx + p, "%02X ", d[k]);
+            ESP_LOGW("alde_ci", "GESENDET %02X: %s", pid, hx);
+          };
+
+          // ---- 1) ausstehenden Befehl ausführen (nur mit Freigabe + frischem Status) ----
+          int cmd = id(alde_cmd);
+          if (cmd != 0) {
+            id(alde_cmd) = 0;
+            int v = id(alde_cmd_val);
+            if (!id(alde_write_enable).state) {
+              ESP_LOGW("alde_ci", "Befehl %d verworfen: Schreiben nicht freigegeben", cmd);
+            } else if (cmd == 3) {
+              const uint8_t ident[8] = {0x10, 0x06, 0xB2, 0x00, 0xDE, 0x41, 0x01, 0x00}; // Compact 3020
+              send_frame(0x3C, ident);
+            } else if (!have_st || millis() - st_ms > 5000) {
+              ESP_LOGW("alde_ci", "Befehl %d verworfen: kein aktueller Status vom Panel", cmd);
+            } else {
+              uint8_t b3 = st[3], b4 = st[4], b5 = st[5];
+              int sp = b3 & 0x3F;                       // Sollwert-Rohwert: (T - 5) / 0,5
+              bool valid = true;
+              if (cmd == 1) sp += 1;
+              else if (cmd == 2) sp -= 1;
+              if (cmd == 1 || cmd == 2) {
+                if (sp < 0 || sp > 50) valid = false;   // nur 5 ... 30 °C
+                else b3 = (b3 & 0xC0) | sp;
+              } else if (cmd == 4) {
+                if (v < 0 || v > 2) valid = false;      // 0 aus, 1 an, 2 Boost
+                else b5 = (b5 & 0xE7) | (v << 3);
+              } else if (cmd == 5) {
+                b5 = (b5 & 0xFE) | (v ? 1 : 0);
+              } else if (cmd == 6) {
+                b3 = (b3 & 0xBF) | ((v ? 1 : 0) << 6);
+              } else if (cmd == 7) {
+                if (v < 0 || v > 3) valid = false;      // 0 ... 3 kW
+                else b4 = (b4 & 0x3F) | (v << 6);
+              } else valid = false;
+              if (valid) {
+                const uint8_t f[8] = {0x00, 0x00, 0x00, b3, b4, b5, 0xFF, 0xFF};
+                send_frame(0x1A, f);
+                delay(40);
+              } else {
+                ESP_LOGW("alde_ci", "Befehl %d verworfen: Wert ausserhalb der Grenzen", cmd);
+              }
+            }
+          }
+
+          // ---- 2) Status abfragen: Break + 0x55 + 0x5B, Panel antwortet 8 Bytes + Prüfsumme ----
+          drain();
+          lin_break();
+          u.write_byte(0x55); u.write_byte(0x5B);
+          u.flush();
+          std::vector<uint8_t> rx;
+          uint32_t t0 = millis();
+          while (millis() - t0 < 25 && rx.size() < 24) {
+            uint8_t b;
+            while (u.available() && rx.size() < 24) { u.read_byte(&b); rx.push_back(b); }
+            delay(1);
+          }
+          // Echo enthält 0x55 0x5B, danach folgt die Antwort des Panels
+          int h = -1;
+          for (int k = 0; k + 1 < (int) rx.size(); k++) if (rx[k] == 0x55 && rx[k + 1] == 0x5B) { h = k + 2; break; }
+          bool good = false;
+          if (h >= 0 && (int) rx.size() >= h + 9 && csum(0x5B, &rx[h], 8) == rx[h + 8]) {
+            good = true;
+            for (int k = 0; k < 8; k++) st[k] = rx[h + k];
+            have_st = true; st_ms = millis(); ok++;
+            id(alde_last_ms) = millis();
+          } else {
+            bad++;
+          }
+          if (++tick % 60 == 0 || (!good && bad <= 5)) {
+            char hx[80]; int p = 0;
+            for (size_t k = 0; k < rx.size() && p < 72; k++) p += sprintf(hx + p, "%02X ", rx[k]);
+            ESP_LOGI("alde_ci", "Abfragen ok=%u fehlerhaft=%u, letzte Rohantwort: %s", (unsigned) ok, (unsigned) bad, hx);
+          }
+          if (!good) return;
+
+          // ---- 3) Rohdaten bei jeder Änderung ins Log und an HA ----
+          char hx[32]; int p = 0;
+          for (int k = 0; k < 8; k++) p += sprintf(hx + p, "%02X ", st[k]);
+          if (last_hex != hx) {
+            last_hex = hx;
+            ESP_LOGI("alde_ci", "STATUS 5B: %s", hx);
+            id(alde_ci_raw).publish_state(hx);
+          }
+
+          // ---- 4) Werte entschlüsseln ----
+          auto temp = [](uint8_t r) -> float { return r >= 0xFB ? NAN : r * 0.5f - 42.0f; };
+          float room = temp(st[0]), outd = temp(st[2]);
+          float sp = (st[3] & 0x3F) * 0.5f + 5.0f;
+          if (!std::isnan(room) && id(alde_room_temp).state != room) id(alde_room_temp).publish_state(room);
+          if (!std::isnan(outd) && id(alde_outdoor_temp).state != outd) id(alde_outdoor_temp).publish_state(outd);
+          if (id(alde_setpoint).state != sp) id(alde_setpoint).publish_state(sp);
+          int elec = (st[4] >> 6) & 3;
+          if (id(alde_electric_level).state != elec) id(alde_electric_level).publish_state(elec);
+          id(alde_gas).publish_state((st[3] >> 6) & 1);
+          id(alde_gas_valve).publish_state((st[3] >> 7) & 1);
+          id(alde_panel_on).publish_state(st[5] & 1);
+          id(alde_error).publish_state((st[5] >> 2) & 1);
+          id(alde_ac_input).publish_state((st[5] >> 5) & 1);
+          id(alde_pump).publish_state((st[5] >> 7) & 1);
+
+          // Bedienelemente in HA auf den gelesenen Stand bringen (ohne Befehl auszulösen)
+          int wm = (st[5] >> 3) & 3;
+          const char *wn[] = {"Aus", "An", "Boost", "An"};
+          static int p_wm = -1, p_el = -1;
+          if (wm != p_wm) { p_wm = wm; id(alde_water_mode).publish_state(wn[wm]); }
+          const char *en[] = {"Aus", "1 kW", "2 kW", "3 kW"};
+          if (elec != p_el) { p_el = elec; id(alde_electric_select).publish_state(en[elec]); }
+          if (id(alde_panel_switch).state != (bool) (st[5] & 1)) id(alde_panel_switch).publish_state(st[5] & 1);
+          if (id(alde_gas_switch).state != (bool) ((st[3] >> 6) & 1)) id(alde_gas_switch).publish_state((st[3] >> 6) & 1);
+
+sensor:
+  - platform: template
+    name: "STR1 Tankfüllstand"
+    id: str1_tank_level
+    unit_of_measurement: "%"
+    state_class: measurement
+    accuracy_decimals: 1
+    icon: "mdi:water-percent"
+    filters:
+      - median:            # gleitender Median über 20 s gegen Schwappen
+          window_size: 20
+          send_every: 10
+          send_first_at: 1
+      - or:
+          - throttle: 300s
+          - delta: 0.3
+
+  - platform: template
+    name: "STR1 Tankinhalt"
+    id: str1_tank_liter
+    unit_of_measurement: "L"
+    state_class: measurement
+    accuracy_decimals: 0
+    icon: "mdi:water"
+    filters:
+      - median:            # gleitender Median über 20 s gegen Schwappen
+          window_size: 20
+          send_every: 10
+          send_first_at: 1
+      - or:
+          - throttle: 300s
+          - delta: 0.5
+
+  # Füllstand im Broadcast in Promille (0-1000)
+  - platform: template
+    name: "STR1 Rohwert"
+    id: str1_rohwert
+    unit_of_measurement: "‰"
+    icon: "mdi:counter"
+    state_class: measurement
+    accuracy_decimals: 0
+    filters:
+      - median:            # gleitender Median über 20 s gegen Schwappen
+          window_size: 20
+          send_every: 10
+          send_first_at: 1
+      - or:
+          - throttle: 300s
+          - delta: 3
+
+  # Tankgröße, wie in der Simarine-App eingetragen (Info)
+  - platform: template
+    name: "STR1 Tankgröße (App)"
+    id: str1_volume
+    unit_of_measurement: "L"
+    icon: "mdi:storage-tank"
+    entity_category: diagnostic
+    accuracy_decimals: 0
+    filters:
+      - or:
+          - throttle: 3600s
+          - delta: 1
+
+  # ---------------- Diagnose ----------------
+  - platform: uptime
+    name: "Betriebszeit"
+    id: uptime_s
+    entity_category: diagnostic
+  # ---------------- Alde 3020 HE über CI-Bus (gelb) ----------------
+  - platform: template
+    name: "Alde Raumtemperatur"
+    id: alde_room_temp
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+  - platform: template
+    name: "Alde Außentemperatur"
+    id: alde_outdoor_temp
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+  - platform: template
+    name: "Alde Heizanforderung"   # Solltemperatur (CI-Bus Byte 3)
+    id: alde_setpoint
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+  - platform: template
+    name: "Alde Elektrostufe"
+    id: alde_electric_level
+    unit_of_measurement: "kW"
+    state_class: measurement
+    accuracy_decimals: 0
+    icon: mdi:flash
+
+text_sensor:
+  - platform: debug
+    reset_reason:
+      name: "Grund letzter Neustart"
+      entity_category: diagnostic
+  - platform: template
+    name: "STR1 Rohdaten"
+    id: str1_raw
+    entity_category: diagnostic
+  - platform: template
+    name: "STR1 Broadcast Status"
+    id: str1_status
+    entity_category: diagnostic
+    icon: mdi:bluetooth-audio
+  # Statusantwort des Panels (8 Bytes) bei jeder Änderung -> HA-Historie, zum Prüfen der Bits
+  - platform: template
+    name: "Alde CI Rohdaten"
+    id: alde_ci_raw
+    icon: mdi:format-list-bulleted
+
+binary_sensor:
+  - platform: template
+    name: "Alde Gas"
+    id: alde_gas
+    icon: mdi:fire
+  - platform: template
+    name: "Alde Gasventil offen"
+    id: alde_gas_valve
+    icon: mdi:gas-burner
+  - platform: template
+    name: "Alde Panel an"
+    id: alde_panel_on
+    icon: mdi:power
+  - platform: template
+    name: "Alde Pumpe"
+    id: alde_pump
+    icon: mdi:pump
+  - platform: template
+    name: "Alde Fehler"
+    id: alde_error
+    device_class: problem
+  - platform: template
+    name: "Alde 230 V vorhanden"
+    id: alde_ac_input
+    device_class: plug
+  - platform: template
+    name: "Alde LIN Verbindung"
+    id: alde_lin_ok
+    device_class: connectivity
+    entity_category: diagnostic
+    lambda: 'return id(alde_last_ms) != 0 && (millis() - id(alde_last_ms)) < 10000;'
+
+# ---------------- Steuerung (nur mit Freigabe) ----------------
+switch:
+  - platform: template
+    name: "Alde CI Schreiben freigeben"
+    id: alde_write_enable
+    icon: mdi:lock-open-alert
+    optimistic: true
+    restore_mode: ALWAYS_OFF
+    entity_category: config
+  - platform: template
+    name: "Alde Panel"
+    id: alde_panel_switch
+    icon: mdi:power
+    turn_on_action:
+      - lambda: 'id(alde_cmd_val) = 1; id(alde_cmd) = 5;'
+    turn_off_action:
+      - lambda: 'id(alde_cmd_val) = 0; id(alde_cmd) = 5;'
+  - platform: template
+    name: "Alde Gas erlauben"
+    id: alde_gas_switch
+    icon: mdi:fire
+    turn_on_action:
+      - lambda: 'id(alde_cmd_val) = 1; id(alde_cmd) = 6;'
+    turn_off_action:
+      - lambda: 'id(alde_cmd_val) = 0; id(alde_cmd) = 6;'
+
+select:
+  - platform: template
+    name: "Alde Warmwasser"
+    id: alde_water_mode
+    icon: mdi:water-boiler
+    options: ["Aus", "An", "Boost"]
+    set_action:
+      - lambda: |-
+          id(alde_cmd_val) = (x == "Aus") ? 0 : (x == "An") ? 1 : 2;
+          id(alde_cmd) = 4;
+  - platform: template
+    name: "Alde Elektro"
+    id: alde_electric_select
+    icon: mdi:flash
+    options: ["Aus", "1 kW", "2 kW", "3 kW"]
+    set_action:
+      - lambda: |-
+          id(alde_cmd_val) = (x == "Aus") ? 0 : (x == "1 kW") ? 1 : (x == "2 kW") ? 2 : 3;
+          id(alde_cmd) = 7;
+
+button:
+  - platform: template
+    name: "Alde Sollwert +0,5 °C"
+    icon: mdi:thermometer-plus
+    on_press:
+      - lambda: 'id(alde_cmd) = 1;'
+  - platform: template
+    name: "Alde Sollwert -0,5 °C"
+    icon: mdi:thermometer-minus
+    on_press:
+      - lambda: 'id(alde_cmd) = 2;'
+  - platform: template
+    name: "Alde Kennung senden (0x3C)"
+    icon: mdi:card-account-details
+    entity_category: config
+    on_press:
+      - lambda: 'id(alde_cmd) = 3;'
