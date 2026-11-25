@@ -1,7 +1,3 @@
-
-
-https://github.com/user-attachments/assets/9e20128e-c267-4203-9a3d-965e644ab117
-
 # 🚐 Dethleffs Grand Alpa Plus – Ultimate 3D Smart Camper OS (Home Assistant)
 
 ## 🎥 Live Demo: Interactive 3D Digital Twin
